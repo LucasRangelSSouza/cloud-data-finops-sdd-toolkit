@@ -1,0 +1,31 @@
+[
+  {
+    "assumption": "Bytes billed are used as a volume signal; pricing is not inferred from this fixture.",
+    "confidence": "high",
+    "evidence": {
+      "bytes_billed": 3000000000000,
+      "bytes_billed_gb": 3000.0,
+      "job_id": "job-expensive",
+      "partition_pruned": false
+    },
+    "id": "BQ-001",
+    "provider": "gcp",
+    "recommendation": "Review partition filters and validate the query plan before changing the workload.",
+    "title": "High-volume BigQuery job without partition pruning"
+  },
+  {
+    "assumption": "The fixture baseline is a comparison point, not a forecast or a savings commitment.",
+    "confidence": "medium",
+    "evidence": {
+      "baseline_usd": 700.0,
+      "cost_usd": 1400.0,
+      "increase_usd": 700.0,
+      "region": "us-east-1",
+      "service": "Amazon Athena"
+    },
+    "id": "AWS-001",
+    "provider": "aws",
+    "recommendation": "Inspect workload, tags, and query patterns before changing reservations or commitments.",
+    "title": "AWS service cost exceeds the declared baseline"
+  }
+]

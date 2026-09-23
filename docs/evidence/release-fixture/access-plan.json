@@ -1,0 +1,25 @@
+{
+  "assessment_id": "demo-2026-09",
+  "aws": {
+    "account_alias": "demo-data-account",
+    "actions": [
+      "ce:GetCostAndUsage",
+      "ce:GetDimensionValues"
+    ],
+    "business_data_write_access": false,
+    "cur": {
+      "approved_s3_prefix": null,
+      "enabled": false
+    }
+  },
+  "gcp": {
+    "billing_export_dataset": null,
+    "business_table_content_access": false,
+    "project_id": "demo-analytics",
+    "roles": [
+      "roles/bigquery.resourceViewer",
+      "roles/bigquery.user"
+    ]
+  },
+  "mode": "read-only"
+}

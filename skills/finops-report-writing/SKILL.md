@@ -13,4 +13,3 @@ Write an executive summary, scope, method, access boundary, findings, assumption
 ## Style
 
 Use direct professional English. Prefer precise verbs and concrete nouns. Avoid slogans, inflated claims, generic conclusions, and filler. End on the final supported fact.
-

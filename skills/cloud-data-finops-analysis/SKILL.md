@@ -21,4 +21,3 @@ Generate and review the access plan first. Request only job, cost, usage, and re
 ## Reporting rule
 
 Treat a signal as an investigation trigger. Do not call it a saving, forecast, or purchase recommendation unless the input, pricing method, units, and assumptions prove that claim.
-

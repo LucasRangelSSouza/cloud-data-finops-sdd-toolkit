@@ -9,4 +9,3 @@ Show the assessment scope, access boundary, evidence, limitations, and next deci
 ## Quality gate
 
 Generate the deck from structured findings, validate its slide count and text layout, render it for visual review, and keep the source evidence available in the repository. Do not use screenshots as a substitute for editable evidence.
-

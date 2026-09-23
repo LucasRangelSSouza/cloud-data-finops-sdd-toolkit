@@ -6,4 +6,6 @@ artifacts/
 build/
 dist/
 *.egg-info/
-
+.build/
+.codex-finalizer/
+scripts/node_modules/
