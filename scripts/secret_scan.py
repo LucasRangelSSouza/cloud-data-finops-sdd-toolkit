@@ -20,6 +20,8 @@ def main() -> int:
     for path in ROOT.rglob("*"):
         if any(part in EXCLUDED_DIRECTORIES for part in path.parts) or path.suffix not in TEXT_SUFFIXES:
             continue
+        if path.resolve() == Path(__file__).resolve():
+            continue
         if not path.is_file():
             continue
         content = path.read_text(encoding="utf-8")
