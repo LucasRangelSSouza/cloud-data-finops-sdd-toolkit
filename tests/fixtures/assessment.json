@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "assessment_id": "demo-2026-09",
+  "scope": {
+    "providers": ["gcp", "aws"],
+    "retention_days": 30,
+    "allow_live_collection": false
+  },
+  "gcp": {
+    "project_id": "demo-analytics",
+    "roles": ["roles/bigquery.user", "roles/bigquery.resourceViewer"],
+    "billing_export_dataset": null,
+    "jobs": [
+      {"job_id": "job-expensive", "bytes_billed": 3000000000000, "partition_pruned": false, "scheduled": true},
+      {"job_id": "job-healthy", "bytes_billed": 2000000000, "partition_pruned": true, "scheduled": false}
+    ]
+  },
+  "aws": {
+    "account_alias": "demo-data-account",
+    "actions": ["ce:GetCostAndUsage", "ce:GetDimensionValues"],
+    "cur": {"enabled": false},
+    "costs": [
+      {"service": "Amazon Athena", "region": "us-east-1", "cost_usd": 1400.0, "baseline_usd": 700.0},
+      {"service": "Amazon S3", "region": "us-east-1", "cost_usd": 120.0, "baseline_usd": 125.0}
+    ]
+  }
+}

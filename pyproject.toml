@@ -1,0 +1,15 @@
+[project]
+name = "cloud-data-finops-sdd-toolkit"
+version = "0.1.0"
+description = "Specification-driven GCP and AWS data FinOps assessment toolkit"
+requires-python = ">=3.10"
+dependencies = ["matplotlib>=3.5"]
+
+[project.scripts]
+finops = "cloud_data_finops.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cloud_data_finops*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
