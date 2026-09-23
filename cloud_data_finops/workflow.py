@@ -33,4 +33,3 @@ def collect_fixture_telemetry(specification: dict[str, Any]) -> dict[str, Any]:
         collected["aws"], AwsFixtureClient(specification["aws"].get("costs", []))
     )
     return collected
-

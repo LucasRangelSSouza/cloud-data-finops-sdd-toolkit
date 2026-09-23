@@ -27,4 +27,3 @@ def build_access_plan(specification: dict[str, Any]) -> dict[str, Any]:
             "business_data_write_access": False,
         },
     }
-

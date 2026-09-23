@@ -19,4 +19,3 @@ def collect_cost_metadata(scope: dict[str, Any], client: AwsCostExplorerClient) 
             raise ValueError("AWS CUR collection requires an approved_s3_prefix")
         raise NotImplementedError("CUR collection is not implemented in the fixture-first release")
     return client.get_cost_and_usage(account_alias)
-

@@ -13,4 +13,3 @@ def collect_job_metadata(scope: dict[str, Any], client: GcpJobMetadataClient) ->
     if not isinstance(project_id, str) or not project_id:
         raise ValueError("GCP project_id is required for metadata collection")
     return client.list_jobs(project_id)
-
