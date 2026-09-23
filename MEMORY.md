@@ -27,6 +27,7 @@ This repository is a public, fixture-first reference for specification-driven da
 - `tests/fixtures/assessment.json` is the only current input fixture.
 - `scripts/check.py` runs compilation, tests, validation, preflight, and report generation.
 - `docs/SPEC.md` records the first-release contract and acceptance criteria.
+- `docs/evidence/release-fixture/synthetic-finops-assessment.pptx` is a structurally validated, visually reviewed four-slide deck generated from the synthetic release fixture.
 
 ## Next verifiable task
 

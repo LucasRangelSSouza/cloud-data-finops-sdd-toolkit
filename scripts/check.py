@@ -17,6 +17,7 @@ def run(*command: str) -> None:
 
 
 run(sys.executable, "-m", "compileall", "-q", "cloud_data_finops", "tests")
+run(sys.executable, "scripts/secret_scan.py")
 run(sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v")
 with tempfile.TemporaryDirectory() as output:
     run(sys.executable, "-m", "cloud_data_finops.cli", "validate", "--spec", str(FIXTURE))

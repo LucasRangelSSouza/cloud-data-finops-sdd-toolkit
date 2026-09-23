@@ -24,7 +24,9 @@ python -m cloud_data_finops.cli access-plan --spec tests/fixtures/assessment.jso
 python -m cloud_data_finops.cli report --spec tests/fixtures/assessment.json --output artifacts/demo
 ```
 
-The generated plan is available at `artifacts/access-plan.json`; the report is available at `artifacts/demo/report.md`. If GNU Make is available, `make check` also runs compilation, unit tests, validation, preflight, access-plan generation, and report generation.
+The generated plan is available at `artifacts/access-plan.json`; the report is available at `artifacts/demo/report.md`. If GNU Make is available, `make check` also runs compilation, secret scanning, unit tests, validation, preflight, access-plan generation, and report generation.
+
+The versioned fixture evidence includes the [technical report](docs/TECHNICAL_REPORT.md), [case-study draft](articles/from-access-boundary-to-finops-findings.md), [access plan](docs/evidence/release-fixture/access-plan.json), and [four-slide deck](docs/evidence/release-fixture/synthetic-finops-assessment.pptx).
 
 ## Assessment flow
 
