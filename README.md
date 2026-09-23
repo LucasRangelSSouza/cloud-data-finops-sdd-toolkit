@@ -10,6 +10,7 @@ The initial vertical slice runs locally with synthetic telemetry:
 
 - validates the assessment contract;
 - blocks broad GCP and AWS permissions before collection;
+- generates a provider-specific, read-only access request from the approved scope;
 - detects an oversized unpartitioned BigQuery job and an AWS cost increase against a declared baseline;
 - writes deterministic JSON findings, a Markdown report, and PNG evidence cards with separate units.
 
@@ -19,10 +20,11 @@ Python 3.10 or newer is required. On Windows, run the following commands from Po
 
 ```powershell
 python -m unittest discover -s tests -v
+python -m cloud_data_finops.cli access-plan --spec tests/fixtures/assessment.json --output artifacts/access-plan.json
 python -m cloud_data_finops.cli report --spec tests/fixtures/assessment.json --output artifacts/demo
 ```
 
-The generated report is available at `artifacts/demo/report.md`. If GNU Make is available, `make check` also runs compilation, unit tests, validation, preflight, and report generation.
+The generated plan is available at `artifacts/access-plan.json`; the report is available at `artifacts/demo/report.md`. If GNU Make is available, `make check` also runs compilation, unit tests, validation, preflight, access-plan generation, and report generation.
 
 ## Assessment flow
 

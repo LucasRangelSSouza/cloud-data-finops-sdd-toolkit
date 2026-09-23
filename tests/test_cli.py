@@ -69,6 +69,18 @@ class FinopsCliContractTests(unittest.TestCase):
         self.assertIn("Evidence and assumptions", report)
         self.assertIn("3,000 GB", report)
 
+    def test_access_plan_writes_provider_specific_read_only_requests(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_path = Path(temporary_directory) / "access-plan.json"
+            completed = self.run_cli("access-plan", "--spec", str(FIXTURE), "--output", str(output_path))
+            plan = json.loads(output_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(plan["gcp"]["roles"], ["roles/bigquery.resourceViewer", "roles/bigquery.user"])
+        self.assertEqual(plan["aws"]["actions"], ["ce:GetCostAndUsage", "ce:GetDimensionValues"])
+        self.assertFalse(plan["gcp"]["business_table_content_access"])
+        self.assertFalse(plan["aws"]["cur"]["enabled"])
+
 
 if __name__ == "__main__":
     unittest.main()
