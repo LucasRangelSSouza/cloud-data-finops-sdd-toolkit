@@ -1,5 +1,7 @@
 # Cloud data FinOps SDD toolkit
 
+![Social preview for the Cloud data FinOps SDD toolkit](docs/assets/social-preview.png)
+
 A fixture-first reference implementation for assessing data-platform cost signals across GCP and AWS. A versioned assessment specification drives validation, access preflight, policy evaluation, and report generation.
 
 The repository is intentionally read-only. It analyzes metadata and approved cost telemetry. It does not access business-table content, create cloud resources, modify commitments, or include provider credentials.
