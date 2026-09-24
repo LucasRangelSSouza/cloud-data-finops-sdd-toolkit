@@ -1,5 +1,7 @@
 # From access boundary to FinOps findings
 
+**Versioned reference:** [v0.1.0](https://github.com/LucasRangelSSouza/cloud-data-finops-sdd-toolkit/tree/v0.1.0)
+
 Cost analysis often starts with a broad request for access. That is difficult to review and impossible to demonstrate safely in a public repository. This case starts with a smaller question: which metadata is sufficient to identify a cost signal without touching business data?
 
 The answer is encoded in an assessment specification. It declares the providers, retention window, access boundary, evidence needed by a rule, and the expected outputs. The command line validates that contract before it evaluates any telemetry. A second command writes the exact GCP and AWS access request, so a reviewer can see the requested roles, actions, and prohibited paths before a collector runs.
