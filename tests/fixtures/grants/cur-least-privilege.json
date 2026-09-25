@@ -1,0 +1,17 @@
+{
+  "gcp": {
+    "project_roles": ["roles/bigquery.resourceViewer", "roles/bigquery.user"],
+    "dataset_roles": [{"dataset": "billing_export", "role": "roles/bigquery.dataViewer"}]
+  },
+  "aws": {
+    "managed_policies": [],
+    "statements": [
+      {"effect": "Allow", "actions": ["ce:GetCostAndUsage", "ce:GetDimensionValues"], "resources": ["*"]},
+      {"effect": "Allow", "actions": ["athena:GetQueryExecution", "athena:GetQueryResults", "athena:StartQueryExecution"], "resources": ["arn:aws:athena:*:*:workgroup/finops-readonly"]},
+      {"effect": "Allow", "actions": ["glue:GetDatabase", "glue:GetPartitions", "glue:GetTable"], "resources": ["arn:aws:glue:*:*:catalog", "arn:aws:glue:*:*:database/cur_db", "arn:aws:glue:*:*:table/cur_db/*"]},
+      {"effect": "Allow", "actions": ["s3:GetBucketLocation", "s3:ListBucket"], "resources": ["arn:aws:s3:::demo-cost-reports", "arn:aws:s3:::demo-athena-results"]},
+      {"effect": "Allow", "actions": ["s3:GetObject"], "resources": ["arn:aws:s3:::demo-cost-reports/cur/daily/*", "arn:aws:s3:::demo-athena-results/finops/*"]},
+      {"effect": "Allow", "actions": ["s3:PutObject"], "resources": ["arn:aws:s3:::demo-athena-results/finops/*"]}
+    ]
+  }
+}

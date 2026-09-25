@@ -1,13 +1,13 @@
 import json
 import subprocess
 import sys
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
+from tests.helpers import FIXTURE, ROOT, load_fixture
 
-ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = ROOT / "tests" / "fixtures" / "assessment.json"
+GRANTS = ROOT / "tests" / "fixtures" / "grants"
 
 
 class FinopsCliContractTests(unittest.TestCase):
@@ -20,64 +20,95 @@ class FinopsCliContractTests(unittest.TestCase):
             capture_output=True,
         )
 
+    def write_spec(self, directory: str, payload: dict) -> Path:
+        path = Path(directory) / "spec.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
     def test_validate_accepts_the_declared_fixture_contract(self) -> None:
         completed = self.run_cli("validate", "--spec", str(FIXTURE))
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("valid", completed.stdout)
 
+    def test_validate_reports_an_actionable_message_for_missing_acceptance_criteria(self) -> None:
+        payload = load_fixture()
+        del payload["acceptance_criteria"]
+        with tempfile.TemporaryDirectory() as directory:
+            completed = self.run_cli("validate", "--spec", str(self.write_spec(directory, payload)))
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("missing required fields: acceptance_criteria", completed.stderr)
+
     def test_preflight_rejects_owner_and_administrator_access(self) -> None:
-        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        payload = load_fixture()
         payload["gcp"]["roles"].append("roles/owner")
         payload["aws"]["actions"].append("AdministratorAccess")
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            unsafe_spec = Path(temporary_directory) / "unsafe.json"
-            unsafe_spec.write_text(json.dumps(payload), encoding="utf-8")
-            completed = self.run_cli("preflight", "--spec", str(unsafe_spec))
+        with tempfile.TemporaryDirectory() as directory:
+            completed = self.run_cli("preflight", "--spec", str(self.write_spec(directory, payload)))
 
         self.assertEqual(completed.returncode, 2)
         self.assertIn("roles/owner", completed.stderr)
         self.assertIn("AdministratorAccess", completed.stderr)
 
     def test_preflight_rejects_a_cur_without_an_approved_prefix(self) -> None:
-        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        payload = load_fixture()
         payload["aws"]["cur"] = {"enabled": True}
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            unsafe_spec = Path(temporary_directory) / "unsafe-cur.json"
-            unsafe_spec.write_text(json.dumps(payload), encoding="utf-8")
-            completed = self.run_cli("preflight", "--spec", str(unsafe_spec))
+        with tempfile.TemporaryDirectory() as directory:
+            completed = self.run_cli("preflight", "--spec", str(self.write_spec(directory, payload)))
 
         self.assertEqual(completed.returncode, 2)
         self.assertIn("approved_s3_prefix", completed.stderr)
 
-    def test_report_writes_machine_readable_findings_and_markdown(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            output_directory = Path(temporary_directory) / "report"
-            completed = self.run_cli("report", "--spec", str(FIXTURE), "--output", str(output_directory))
+    def test_preflight_compares_provider_grants(self) -> None:
+        passed = self.run_cli("preflight", "--spec", str(FIXTURE), "--grants", str(GRANTS / "least-privilege.json"))
+        rejected = self.run_cli("preflight", "--spec", str(FIXTURE), "--grants", str(GRANTS / "broad-owner-admin.json"))
+
+        self.assertEqual(passed.returncode, 0, passed.stderr)
+        self.assertEqual(rejected.returncode, 2)
+        self.assertIn("granted GCP role is prohibited: roles/owner", rejected.stderr)
+        self.assertIn("AdministratorAccess", rejected.stderr)
+
+    def test_report_writes_findings_markdown_chart_and_deck(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "report"
+            completed = self.run_cli("report", "--spec", str(FIXTURE), "--output", str(output))
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            findings = json.loads((output_directory / "findings.json").read_text(encoding="utf-8"))
-            report = (output_directory / "report.md").read_text(encoding="utf-8")
-            chart = output_directory / "cost-signals.png"
+            findings = json.loads((output / "findings.json").read_text(encoding="utf-8"))
+            report = (output / "report.md").read_text(encoding="utf-8")
+            self.assertGreater((output / "cost-signals.png").stat().st_size, 1_000)
+            self.assertTrue((output / "synthetic-finops-assessment.pptx").is_file())
 
-            self.assertTrue(chart.is_file())
-            self.assertGreater(chart.stat().st_size, 1_000)
+        self.assertEqual(findings[0]["rule_id"], "AWS-001")
+        self.assertIn("## Limitations", report)
+        self.assertIn("Synthetic data", report)
 
-        self.assertEqual([finding["id"] for finding in findings], ["BQ-001", "AWS-001"])
-        self.assertIn("Evidence and assumptions", report)
-        self.assertIn("3,000 GB", report)
+    def test_deck_command_writes_only_the_deck(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            deck = Path(directory) / "deck.pptx"
+            completed = self.run_cli("deck", "--spec", str(FIXTURE), "--output", str(deck))
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertTrue(deck.is_file())
+
+    def test_synth_reproduces_the_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "generated.json"
+            completed = self.run_cli("synth", "--output", str(output))
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(output.read_bytes(), FIXTURE.read_bytes())
 
     def test_access_plan_writes_provider_specific_read_only_requests(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            output_path = Path(temporary_directory) / "access-plan.json"
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "access-plan.json"
             completed = self.run_cli("access-plan", "--spec", str(FIXTURE), "--output", str(output_path))
             plan = json.loads(output_path.read_text(encoding="utf-8"))
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertEqual(plan["gcp"]["roles"], ["roles/bigquery.resourceViewer", "roles/bigquery.user"])
-        self.assertEqual(plan["aws"]["actions"], ["ce:GetCostAndUsage", "ce:GetDimensionValues"])
+        self.assertEqual(plan["gcp"]["project_roles"], ["roles/bigquery.resourceViewer", "roles/bigquery.user"])
+        self.assertIn("ce:GetCostAndUsage", plan["aws"]["actions"])
+        self.assertIn("cloudwatch:GetMetricData", plan["aws"]["actions"])
         self.assertFalse(plan["gcp"]["business_table_content_access"])
         self.assertFalse(plan["aws"]["cur"]["enabled"])
 

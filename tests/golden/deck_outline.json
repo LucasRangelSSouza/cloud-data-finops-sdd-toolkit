@@ -1,0 +1,113 @@
+[
+  {
+    "index": 1,
+    "section": "title",
+    "title": "Synthetic cloud data FinOps assessment",
+    "text": [
+      "Assessment demo-2026-09 · 2026-08-02 to 2026-08-31 · GCP and AWS\nSynthetic fixture data. Nothing here describes a real environment, bill, or saving."
+    ]
+  },
+  {
+    "index": 2,
+    "section": "executive-summary",
+    "title": "Executive summary",
+    "text": [
+      "11\nFindings in total",
+      "5\nHigh priority",
+      "4\nMedium priority",
+      "2\nLow priority",
+      "GCP: 6 findings. The largest job billed 3.0 TB without partition pruning.\nAWS: 5 findings. Amazon Athena / us-east-1 rose USD 700 above its baseline.\n4 of 11 findings carry an upper-bound estimate in TB, slot-hours, or USD; none is a saving.\nNo commitment purchase is recommended: the commitment evidence is incomplete.",
+      "Synthetic fixture data · demo-2026-09 · 2"
+    ]
+  },
+  {
+    "index": 3,
+    "section": "cost-drivers",
+    "title": "Cost drivers by provider",
+    "text": [
+      "GCP: bytes billed, five largest jobs (TB)",
+      "job-expensive",
+      "3.00 TB",
+      "job-cohort-1",
+      "0.40 TB",
+      "job-cohort-2",
+      "0.40 TB",
+      "job-cohort-3",
+      "0.40 TB",
+      "job-events-scan",
+      "0.25 TB",
+      "AWS: cost vs baseline by service (USD)",
+      "Amazon Athena",
+      "USD 1,400",
+      "AWS Glue",
+      "USD 480",
+      "Amazon CloudWatch",
+      "USD 325",
+      "Amazon Redshift",
+      "USD 235",
+      "Amazon DynamoDB",
+      "USD 197",
+      "Units differ by panel and are not compared. Grey bars show the declared baseline; blue bars show the assessment period.",
+      "Synthetic fixture data · demo-2026-09 · 3"
+    ]
+  },
+  {
+    "index": 4,
+    "section": "prioritized-recommendations",
+    "title": "Prioritized recommendations",
+    "text": [
+      "# | Priority | Rule | Subject | Next action | Confidence",
+      "1 | high | AWS-001 | Amazon Athena / us-east-1 | Explain the service and region cost increase | medium",
+      "2 | high | AWS-001 | AWS Glue / us-east-1 | Explain the service and region cost increase | medium",
+      "3 | high | BQ-001 | job-expensive | Review query plan and filters of the largest job | high",
+      "4 | high | BQ-003 | job-expensive | Add a partition filter and confirm pruning | high",
+      "5 | high | BQ-003 | job-events-scan | Add a partition filter and confirm pruning | high",
+      "6 | medium | AWS-002 | team=(untagged) | Attribute untagged spend to an owner | medium",
+      "7 | medium | BQ-002 | fp-adhoc-cohort | Evaluate materializing or caching the repeated query | medium",
+      "8 | medium | BQ-004 | fp-hourly-kpi-refresh | Align schedule frequency with source refreshes | medium",
+      "9 | medium | BQ-005 | res-batch-etl | Review reservation baseline against peak usage | medium",
+      "10 | low | AWS-003 | redshift-reporting | Confirm owner and dependencies before resizing | low",
+      "11 | low | CMT-001 | AWS Glue | Collect missing evidence before any commitment | medium",
+      "Synthetic fixture data · demo-2026-09 · 4"
+    ]
+  },
+  {
+    "index": 5,
+    "section": "risks-and-assumptions",
+    "title": "Risks and assumptions",
+    "text": [
+      "Assumptions\n• Telemetry is synthetic and generated from a fixed seed.\n• No pricing model is applied; estimates are upper bounds in TB, slot-hours, or USD.\n• Thresholds are catalog defaults and need review for a real workload.\n• Resource utilization and commitment data are optional telemetry and were approved in the fixture scope.",
+      "Risks before acting\n• Acting on an upper bound can overstate the benefit of a change.\n• Reducing reservation baselines can slow peak workloads; review peak slot usage first.\n• Retiring an underutilized resource can break an undocumented dependency.\n• Buying a commitment on incomplete history can lock in unused spend.",
+      "Synthetic fixture data · demo-2026-09 · 5"
+    ]
+  },
+  {
+    "index": 6,
+    "section": "evidence-appendix",
+    "title": "Evidence appendix (1 of 2)",
+    "text": [
+      "Rule | Subject | Evidence source | Observed metric | Estimate",
+      "AWS-001 | Amazon Athena / us-east-1 | aws.costs | USD 1,400 vs USD 700 baseline | Not estimated",
+      "AWS-001 | AWS Glue / us-east-1 | aws.costs | USD 480 vs USD 300 baseline | Not estimated",
+      "BQ-001 | job-expensive | gcp.jobs | 3.00 TB billed | Not estimated",
+      "BQ-003 | job-expensive | gcp.jobs | 3.00 TB billed | Not estimated",
+      "BQ-003 | job-events-scan | gcp.jobs | 0.25 TB billed | Not estimated",
+      "AWS-002 | team=(untagged) | aws.tag_costs | USD 650 vs USD 300 baseline | Not estimated",
+      "BQ-002 | fp-adhoc-cohort | gcp.jobs | 3 runs, 0.8 TB repeated | 0.8 TB (upper bound)",
+      "BQ-004 | fp-hourly-kpi-refresh | gcp.schedules | 6 runs/day; source changes 1/day | 7.5 TB per 30 days",
+      "BQ-005 | res-batch-etl | gcp.reservations | 18% of 500 slots used | 295,200 idle slot-hours",
+      "AWS-003 | redshift-reporting | aws.resources | 4% utilization over 30 days | USD 2,112 per month",
+      "CMT-001 | AWS Glue | aws.commitments | CV 0.02, coverage 0% | Not estimated",
+      "Synthetic fixture data · demo-2026-09 · 6"
+    ]
+  },
+  {
+    "index": 7,
+    "section": "evidence-appendix",
+    "title": "Evidence appendix (2 of 2)",
+    "text": [
+      "Every number in this deck comes from findings.json and the synthetic fixture.\nfindings.json SHA-256: e4ca61ca9a634f52c2fcde3dc20538e0879a59d15bede9601869f7cdbc8c014f\nGenerator: cloud_data_finops.synthetic, seed 20260901\nReproduce: make reproduce (see docs/reproduce.md for expected checksums)\nFull per-finding evidence, formulas, units, and assumptions: report.md",
+      "Synthetic fixture data · demo-2026-09 · 7"
+    ]
+  }
+]

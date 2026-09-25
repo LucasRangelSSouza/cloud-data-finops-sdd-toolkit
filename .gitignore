@@ -9,3 +9,5 @@ dist/
 .build/
 .codex-finalizer/
 scripts/node_modules/
+.ruff_cache/
+outputs/

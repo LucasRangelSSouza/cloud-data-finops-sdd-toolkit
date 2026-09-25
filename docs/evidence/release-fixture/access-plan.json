@@ -4,22 +4,50 @@
     "account_alias": "demo-data-account",
     "actions": [
       "ce:GetCostAndUsage",
-      "ce:GetDimensionValues"
+      "ce:GetDimensionValues",
+      "ce:GetReservationCoverage",
+      "ce:GetSavingsPlansCoverage",
+      "cloudwatch:GetMetricData"
     ],
     "business_data_write_access": false,
     "cur": {
       "approved_s3_prefix": null,
-      "enabled": false
-    }
+      "athena_workgroup": null,
+      "enabled": false,
+      "glue_database": null,
+      "query_results_prefix": null
+    },
+    "optional_telemetry": [
+      "commitment_coverage",
+      "resource_utilization"
+    ],
+    "prohibited_actions": [
+      "*",
+      "AdministratorAccess",
+      "athena:*",
+      "ce:*",
+      "glue:*",
+      "s3:*"
+    ]
   },
   "gcp": {
     "billing_export_dataset": null,
     "business_table_content_access": false,
+    "dataset_roles": [],
+    "prohibited_roles": [
+      "roles/editor",
+      "roles/owner"
+    ],
     "project_id": "demo-analytics",
-    "roles": [
+    "project_roles": [
       "roles/bigquery.resourceViewer",
       "roles/bigquery.user"
     ]
   },
-  "mode": "read-only"
+  "mode": "read-only",
+  "period": {
+    "end": "2026-08-31",
+    "start": "2026-08-02"
+  },
+  "retention_days": 30
 }

@@ -1,0 +1,22 @@
+{
+  "gcp": {
+    "project_roles": ["roles/bigquery.resourceViewer", "roles/bigquery.user"],
+    "dataset_roles": []
+  },
+  "aws": {
+    "managed_policies": [],
+    "statements": [
+      {
+        "effect": "Allow",
+        "actions": [
+          "ce:GetCostAndUsage",
+          "ce:GetDimensionValues",
+          "ce:GetReservationCoverage",
+          "ce:GetSavingsPlansCoverage",
+          "cloudwatch:GetMetricData"
+        ],
+        "resources": ["*"]
+      }
+    ]
+  }
+}

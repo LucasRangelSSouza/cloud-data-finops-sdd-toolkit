@@ -1,27 +1,356 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "assessment_id": "demo-2026-09",
-  "scope": {
-    "providers": ["gcp", "aws"],
-    "retention_days": 30,
-    "allow_live_collection": false
+  "period": {
+    "start": "2026-08-02",
+    "end": "2026-08-31"
   },
+  "scope": {
+    "providers": [
+      "gcp",
+      "aws"
+    ],
+    "retention_days": 30,
+    "allow_live_collection": false,
+    "data_origin": "synthetic",
+    "generator": {
+      "name": "cloud_data_finops.synthetic",
+      "seed": 20260901
+    }
+  },
+  "acceptance_criteria": [
+    "Validation and preflight pass before any collector runs.",
+    "Every enabled rule is evaluated against collected telemetry only.",
+    "Every finding separates observed evidence, calculation, recommendation, estimated impact, and confidence.",
+    "No finding states a monetary saving or a purchase recommendation without complete evidence."
+  ],
   "gcp": {
     "project_id": "demo-analytics",
-    "roles": ["roles/bigquery.user", "roles/bigquery.resourceViewer"],
+    "location": "us",
+    "roles": [
+      "roles/bigquery.user",
+      "roles/bigquery.resourceViewer"
+    ],
     "billing_export_dataset": null,
     "jobs": [
-      {"job_id": "job-expensive", "bytes_billed": 3000000000000, "partition_pruned": false, "scheduled": true},
-      {"job_id": "job-healthy", "bytes_billed": 2000000000, "partition_pruned": true, "scheduled": false}
+      {
+        "job_id": "job-expensive",
+        "fingerprint": "fp-orders-full-scan",
+        "bytes_billed": 3000000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": false,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-events-scan",
+        "fingerprint": "fp-events-scan",
+        "bytes_billed": 250000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": false,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-cohort-1",
+        "fingerprint": "fp-adhoc-cohort",
+        "bytes_billed": 400000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-cohort-2",
+        "fingerprint": "fp-adhoc-cohort",
+        "bytes_billed": 400000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-cohort-3",
+        "fingerprint": "fp-adhoc-cohort",
+        "bytes_billed": 400000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-01",
+        "fingerprint": "fp-routine-01",
+        "bytes_billed": 3000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-02",
+        "fingerprint": "fp-routine-02",
+        "bytes_billed": 69000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-routine-03",
+        "fingerprint": "fp-routine-03",
+        "bytes_billed": 23000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-04",
+        "fingerprint": "fp-routine-04",
+        "bytes_billed": 13000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-routine-05",
+        "fingerprint": "fp-routine-05",
+        "bytes_billed": 75000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-routine-06",
+        "fingerprint": "fp-routine-06",
+        "bytes_billed": 26000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-routine-07",
+        "fingerprint": "fp-routine-07",
+        "bytes_billed": 1000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-08",
+        "fingerprint": "fp-routine-08",
+        "bytes_billed": 55000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-09",
+        "fingerprint": "fp-routine-09",
+        "bytes_billed": 1000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": true
+      },
+      {
+        "job_id": "job-routine-10",
+        "fingerprint": "fp-routine-10",
+        "bytes_billed": 1000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-11",
+        "fingerprint": "fp-routine-11",
+        "bytes_billed": 11000000000,
+        "references_partitioned_table": false,
+        "partition_pruned": false,
+        "scheduled": false
+      },
+      {
+        "job_id": "job-routine-12",
+        "fingerprint": "fp-routine-12",
+        "bytes_billed": 45000000000,
+        "references_partitioned_table": true,
+        "partition_pruned": true,
+        "scheduled": false
+      }
+    ],
+    "schedules": [
+      {
+        "fingerprint": "fp-hourly-kpi-refresh",
+        "runs_per_day": 6,
+        "source_updates_per_day": 1,
+        "avg_bytes_billed": 50000000000
+      },
+      {
+        "fingerprint": "fp-daily-snapshot",
+        "runs_per_day": 1,
+        "source_updates_per_day": 1,
+        "avg_bytes_billed": 20000000000
+      },
+      {
+        "fingerprint": "fp-quarter-hour-feed",
+        "runs_per_day": 4,
+        "source_updates_per_day": 3,
+        "avg_bytes_billed": 5000000000
+      }
+    ],
+    "reservations": [
+      {
+        "reservation_id": "res-batch-etl",
+        "baseline_slots": 500,
+        "avg_slots_used": 90.0,
+        "peak_slots_used": 420.0,
+        "hours_observed": 720
+      },
+      {
+        "reservation_id": "res-interactive",
+        "baseline_slots": 200,
+        "avg_slots_used": 150.0,
+        "peak_slots_used": 260.0,
+        "hours_observed": 720
+      }
     ]
   },
   "aws": {
     "account_alias": "demo-data-account",
-    "actions": ["ce:GetCostAndUsage", "ce:GetDimensionValues"],
-    "cur": {"enabled": false},
+    "actions": [
+      "ce:GetCostAndUsage",
+      "ce:GetDimensionValues",
+      "ce:GetReservationCoverage",
+      "ce:GetSavingsPlansCoverage",
+      "cloudwatch:GetMetricData"
+    ],
+    "optional_telemetry": [
+      "commitment_coverage",
+      "resource_utilization"
+    ],
+    "cost_allocation_tag": "team",
+    "cur": {
+      "enabled": false
+    },
     "costs": [
-      {"service": "Amazon Athena", "region": "us-east-1", "cost_usd": 1400.0, "baseline_usd": 700.0},
-      {"service": "Amazon S3", "region": "us-east-1", "cost_usd": 120.0, "baseline_usd": 125.0}
+      {
+        "service": "Amazon Athena",
+        "region": "us-east-1",
+        "cost_usd": 1400.0,
+        "baseline_usd": 700.0
+      },
+      {
+        "service": "AWS Glue",
+        "region": "us-east-1",
+        "cost_usd": 480.0,
+        "baseline_usd": 300.0
+      },
+      {
+        "service": "Amazon EMR",
+        "region": "us-west-2",
+        "cost_usd": 140.0,
+        "baseline_usd": 100.0
+      },
+      {
+        "service": "Amazon S3",
+        "region": "us-east-1",
+        "cost_usd": 120.0,
+        "baseline_usd": 125.0
+      },
+      {
+        "service": "Amazon DynamoDB",
+        "region": "us-east-1",
+        "cost_usd": 196.96,
+        "baseline_usd": 173.0
+      },
+      {
+        "service": "Amazon Kinesis",
+        "region": "us-east-1",
+        "cost_usd": 138.87,
+        "baseline_usd": 147.0
+      },
+      {
+        "service": "Amazon Redshift",
+        "region": "us-east-1",
+        "cost_usd": 235.23,
+        "baseline_usd": 185.0
+      },
+      {
+        "service": "AWS Lambda",
+        "region": "us-west-2",
+        "cost_usd": 94.69,
+        "baseline_usd": 111.0
+      },
+      {
+        "service": "Amazon CloudWatch",
+        "region": "us-east-1",
+        "cost_usd": 324.69,
+        "baseline_usd": 272.0
+      }
+    ],
+    "tag_costs": [
+      {
+        "tag_key": "team",
+        "tag_value": null,
+        "cost_usd": 650.0,
+        "baseline_usd": 300.0
+      },
+      {
+        "tag_key": "team",
+        "tag_value": "analytics",
+        "cost_usd": 900.0,
+        "baseline_usd": 850.0
+      },
+      {
+        "tag_key": "team",
+        "tag_value": "ml-platform",
+        "cost_usd": 300.0,
+        "baseline_usd": 280.0
+      }
+    ],
+    "resources": [
+      {
+        "resource_id": "redshift-reporting",
+        "type": "redshift-cluster",
+        "utilization": 0.04,
+        "observed_days": 30,
+        "monthly_cost_usd": 2200.0
+      },
+      {
+        "resource_id": "emr-sandbox",
+        "type": "emr-cluster",
+        "utilization": 0.08,
+        "observed_days": 7,
+        "monthly_cost_usd": 600.0
+      },
+      {
+        "resource_id": "athena-wg-analytics",
+        "type": "athena-workgroup",
+        "utilization": 0.45,
+        "observed_days": 30,
+        "monthly_cost_usd": 0.0
+      }
+    ],
+    "commitments": [
+      {
+        "service": "AWS Glue",
+        "monthly_on_demand_usd": [
+          410.0,
+          395.0,
+          420.0,
+          405.0,
+          415.0,
+          400.0
+        ],
+        "coverage_ratio": 0.0
+      },
+      {
+        "service": "Amazon Athena",
+        "monthly_on_demand_usd": [
+          300.0,
+          520.0,
+          700.0,
+          910.0,
+          1150.0,
+          1400.0
+        ],
+        "coverage_ratio": 0.0
+      }
     ]
+  },
+  "assumptions": {
+    "commitments": {}
   }
 }

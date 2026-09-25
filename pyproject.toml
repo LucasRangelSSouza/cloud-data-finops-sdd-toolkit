@@ -1,9 +1,19 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cloud-data-finops-sdd-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Specification-driven GCP and AWS data FinOps assessment toolkit"
+readme = "README.md"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
-dependencies = ["matplotlib>=3.5"]
+# Exact pins keep the PNG and PPTX checksums in docs/evidence reproducible.
+dependencies = ["matplotlib==3.8.4", "python-pptx==1.0.2"]
+
+[project.optional-dependencies]
+dev = ["ruff==0.16.4"]
 
 [project.scripts]
 finops = "cloud_data_finops.cli:main"
@@ -11,5 +21,13 @@ finops = "cloud_data_finops.cli:main"
 [tool.setuptools.packages.find]
 include = ["cloud_data_finops*"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[tool.ruff]
+line-length = 160
+target-version = "py310"
+extend-exclude = [".build", ".codex-finalizer", "artifacts", "outputs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cloud_data_finops", "tests"]

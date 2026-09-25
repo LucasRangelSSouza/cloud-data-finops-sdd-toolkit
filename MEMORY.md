@@ -6,29 +6,18 @@ This repository is a public, fixture-first reference for specification-driven da
 
 ## Current state
 
-- The first vertical slice is implemented and covered by CLI contract tests.
-- `validate` checks the fixture-mode assessment contract.
-- `preflight` rejects broad GCP and AWS permissions before collection.
-- `access-plan` emits the reviewed GCP/AWS read-only request only after validation and preflight pass.
-- `report` emits deterministic JSON findings and a Markdown report from synthetic telemetry.
-- `report` also emits separate-unit PNG evidence cards. The visual was reviewed locally after replacing an invalid mixed-unit bar chart.
-- Fixture reporting now routes GCP job metadata and AWS Cost Explorer metadata through injected adapter clients before policy evaluation.
+- v0.2.0: 9 policy rules across GCP (BigQuery bytes scanned, repeated expensive queries, missing partition pruning, inefficient scheduling, reservation slot utilization) and AWS (service/region cost anomaly, tag cost anomaly, idle resources, commitment/discount coverage). See [docs/rule-catalog.md](docs/rule-catalog.md) for thresholds and the finding model.
+- A seeded synthetic multi-cloud telemetry generator (`cloud_data_finops.synthetic`, default seed `20260901`) replaces the old external Node-based deck generator; the report/deck path now depends only on pinned Python packages (`requirements-dev.txt`).
+- `deck` produces a byte-reproducible seven-slide PPTX built with `python-pptx` directly (no external renderer). `scripts/reproduce.py` rebuilds every artifact from the checked-in fixture and compares SHA-256 against `docs/evidence/release-fixture/SHA256SUMS`; the fixture spec produces 11 findings.
+- `make check` runs format, ruff lint, compile, secret scan, a documentation link check, 126 unit tests, and the four core CLI commands. CI mirrors this.
+- Deleted: `scripts/build_deck.mjs` and the untracked `outputs/` folder — depended on a private, non-reproducible `@oai/artifact-tool` package and were never committed.
 
 ## Decisions
 
-- Canonical interfaces: `finops validate`, `finops preflight`, and `finops report`.
-- Local tests use only the Python standard library and synthetic fixtures.
-- GCP and AWS adapters accept injected metadata clients. They do not import SDKs, call a network, request table content, or query CUR in the first release.
-- Live-provider collectors remain out of scope until their least-privilege access contracts and adapter tests exist.
-
-## Evidence
-
-- `tests/test_cli.py` covers the four command contracts; `tests/test_adapters.py` proves metadata-only collector behavior; `tests/test_workflow.py` covers the fixture workflow.
-- `tests/fixtures/assessment.json` is the only current input fixture.
-- `scripts/check.py` runs compilation, tests, validation, preflight, and report generation.
-- `docs/SPEC.md` records the first-release contract and acceptance criteria.
-- `docs/evidence/release-fixture/synthetic-finops-assessment.pptx` is a structurally validated, visually reviewed four-slide deck generated from the synthetic release fixture.
+- Canonical interfaces: `finops validate|preflight|access-plan|report|deck|synth`.
+- Findings separate observed evidence, calculation (inputs/formula/units/assumptions), recommendation, estimated impact, and confidence; several rules deliberately report no monetary estimate without a pricing input.
+- Local tests use only synthetic fixtures; live-provider collectors remain out of scope, gated by the same preflight/safety guards tested in `tests/test_access.py` and `tests/test_safety.py`.
 
 ## Next verifiable task
 
-Add a fixture-backed collection workflow that routes injected GCP/AWS metadata through policy evaluation, without adding provider credentials or business-table extraction.
+A mocked-then-live GCP/AWS adapter path, gated behind an explicit, separately authorized access plan; extend `partition_pruned`/`source_updates_per_day` derivations once a live adapter exists to test them against.
