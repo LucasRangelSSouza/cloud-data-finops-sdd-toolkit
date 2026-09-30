@@ -86,7 +86,7 @@ Preflight and safety guards are tested against positive, negative, and boundary 
 
 ## Published articles and case studies
 
-[From access boundary to FinOps findings](articles/from-access-boundary-to-finops-findings.md) is a draft for later manual publication; not yet published elsewhere.
+Article: [From access boundary to FinOps findings](https://medium.com/@lucas.rangel_18599/from-access-boundary-to-finops-findings-441a55fb158f) on Medium (source: [articles/from-access-boundary-to-finops-findings.md](articles/from-access-boundary-to-finops-findings.md)).
 
 ## Roadmap
 
