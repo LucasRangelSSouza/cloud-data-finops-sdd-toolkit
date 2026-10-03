@@ -96,3 +96,9 @@ Preflight and safety guards are tested against positive, negative, and boundary 
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+<!-- articles:start -->
+## Articles
+
+- [How to systematically cut your cloud data lake costs](https://lucas.rangeltech.net/articles/d1-cut-cloud-data-lake-costs/)
+<!-- articles:end -->
