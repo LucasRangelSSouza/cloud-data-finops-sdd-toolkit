@@ -32,6 +32,7 @@
       "roles/bigquery.resourceViewer"
     ],
     "billing_export_dataset": null,
+    "storage_insights_dataset": "demo_storage_insights",
     "jobs": [
       {
         "job_id": "job-expensive",
@@ -204,6 +205,54 @@
         "avg_slots_used": 150.0,
         "peak_slots_used": 260.0,
         "hours_observed": 720
+      }
+    ],
+    "dml_tables": [
+      {
+        "table_id": "ops.rate_control",
+        "table_bytes": 80,
+        "dml_statements_per_day": 8272,
+        "slot_hours_per_day": 447.66
+      },
+      {
+        "table_id": "ops.run_log",
+        "table_bytes": 2400000000,
+        "dml_statements_per_day": 1500,
+        "slot_hours_per_day": 0.9
+      }
+    ],
+    "table_rebuilds": [
+      {
+        "table_id": "trusted.reports",
+        "table_bytes": 155000000000,
+        "rebuilds_per_day": 1,
+        "avg_bytes_billed": 55000000000
+      },
+      {
+        "table_id": "trusted.dim_region",
+        "table_bytes": 2000000000,
+        "rebuilds_per_day": 1,
+        "avg_bytes_billed": 1000000000
+      }
+    ],
+    "storage_prefixes": [
+      {
+        "bucket": "exports",
+        "prefix": "csv/",
+        "object_count": 441613,
+        "total_bytes": 56400000000000,
+        "objects_added_per_day": 1850,
+        "objects_deleted_per_day": 0,
+        "lifecycle_rule": false
+      },
+      {
+        "bucket": "demo-landing",
+        "prefix": "raw/",
+        "object_count": 120000,
+        "total_bytes": 900000000000,
+        "objects_added_per_day": 4000,
+        "objects_deleted_per_day": 3900,
+        "lifecycle_rule": true
       }
     ]
   },

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from . import aws, bigquery, commitments
+from . import aws, bigquery, commitments, storage
 from .model import Finding
 
 RuleFunction = Callable[[dict[str, Any], dict[str, float], dict[str, Any]], list[Finding]]
@@ -50,6 +50,30 @@ RULES: dict[str, Rule] = {
             "gcp.reservations",
             {"max_avg_utilization": 0.30, "min_hours_observed": 168},
             bigquery.reservation_utilization,
+        ),
+        Rule(
+            "BQ-006",
+            "gcp",
+            "Small table used as a high-frequency state store",
+            "gcp.dml_tables",
+            {"max_table_bytes": 10_000_000, "min_dml_per_day": 1_000, "min_slot_seconds_per_statement": 10},
+            bigquery.dml_hot_row_contention,
+        ),
+        Rule(
+            "BQ-007",
+            "gcp",
+            "Large table rebuilt in full on every run",
+            "gcp.table_rebuilds",
+            {"min_table_bytes": 100_000_000_000, "min_rebuilds_per_day": 1},
+            bigquery.full_rebuild_of_large_table,
+        ),
+        Rule(
+            "GCS-001",
+            "gcp",
+            "Objects accumulate with no expiry",
+            "gcp.gcs_prefixes",
+            {"min_objects_added_per_day": 100, "max_deleted_to_added_ratio": 0.05},
+            storage.growth_without_expiry,
         ),
         Rule(
             "AWS-001",

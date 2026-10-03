@@ -33,7 +33,12 @@
   "gcp": {
     "billing_export_dataset": null,
     "business_table_content_access": false,
-    "dataset_roles": [],
+    "dataset_roles": [
+      {
+        "dataset": "demo_storage_insights",
+        "role": "roles/bigquery.dataViewer"
+      }
+    ],
     "prohibited_roles": [
       "roles/editor",
       "roles/owner"
@@ -42,7 +47,8 @@
     "project_roles": [
       "roles/bigquery.resourceViewer",
       "roles/bigquery.user"
-    ]
+    ],
+    "storage_insights_dataset": "demo_storage_insights"
   },
   "mode": "read-only",
   "period": {

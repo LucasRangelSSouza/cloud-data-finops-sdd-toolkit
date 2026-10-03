@@ -242,3 +242,114 @@ def reservation_utilization(telemetry: dict[str, Any], thresholds: dict[str, flo
             )
         )
     return findings
+
+
+def dml_hot_row_contention(telemetry: dict[str, Any], thresholds: dict[str, float], _: dict[str, Any]) -> list[Finding]:
+    """BQ-006: a small table receives frequent DML whose slot time is far above the work it does (lock contention)."""
+    findings = []
+    for table in telemetry["gcp"].get("dml_tables", []):
+        statements = table["dml_statements_per_day"]
+        if table["table_bytes"] > thresholds["max_table_bytes"] or statements < thresholds["min_dml_per_day"]:
+            continue
+        slot_seconds_per_statement = round(table["slot_hours_per_day"] * 3600 / statements, 2)
+        if slot_seconds_per_statement < thresholds["min_slot_seconds_per_statement"]:
+            continue
+        slot_hours_30d = round(table["slot_hours_per_day"] * 30, 1)
+        findings.append(
+            Finding(
+                rule_id="BQ-006",
+                provider="gcp",
+                title="Small table used as a high-frequency state store",
+                subject=table["table_id"],
+                priority="high",
+                evidence_source="gcp.dml_tables",
+                observed_evidence={
+                    "table_id": table["table_id"],
+                    "table_bytes": table["table_bytes"],
+                    "dml_statements_per_day": statements,
+                    "slot_hours_per_day": table["slot_hours_per_day"],
+                },
+                calculation=Calculation(
+                    inputs={
+                        "table_bytes": table["table_bytes"],
+                        "dml_statements_per_day": statements,
+                        "slot_hours_per_day": table["slot_hours_per_day"],
+                        "max_table_bytes": thresholds["max_table_bytes"],
+                        "min_dml_per_day": thresholds["min_dml_per_day"],
+                    },
+                    formula="slot_seconds_per_statement = slot_hours_per_day * 3600 / dml_statements_per_day",
+                    result={"slot_seconds_per_statement": slot_seconds_per_statement, "slot_hours_30d": slot_hours_30d},
+                    units={"table_bytes": "bytes", "slot_seconds_per_statement": "slot-seconds", "slot_hours_30d": "slot-hours"},
+                    assumptions=(
+                        "Slot time on a table this small comes from waiting on DML locks, not from scanning data.",
+                        "BigQuery queues concurrent mutating statements on the same table, so concurrent writers wait.",
+                    ),
+                ),
+                recommendation=(
+                    "Move the state out of BigQuery (an object with a generation precondition, a key-value store or a "
+                    "transactional database), or have one writer per cycle instead of one per worker."
+                ),
+                action="Move high-frequency state out of BigQuery",
+                estimated_impact=EstimatedImpact(
+                    value=slot_hours_30d,
+                    unit="slot-hours per 30 days (upper bound)",
+                    basis="All slot time on this table; moving the state elsewhere removes it. No price is applied.",
+                ),
+                weight=table["slot_hours_per_day"],
+                confidence="high",
+            )
+        )
+    return findings
+
+
+def full_rebuild_of_large_table(telemetry: dict[str, Any], thresholds: dict[str, float], _: dict[str, Any]) -> list[Finding]:
+    """BQ-007: a large table is recreated in full (CREATE OR REPLACE TABLE AS SELECT) every day."""
+    findings = []
+    for table in telemetry["gcp"].get("table_rebuilds", []):
+        if table["table_bytes"] < thresholds["min_table_bytes"] or table["rebuilds_per_day"] < thresholds["min_rebuilds_per_day"]:
+            continue
+        rebuilt_tb_30d = terabytes(table["rebuilds_per_day"] * table["avg_bytes_billed"] * 30)
+        findings.append(
+            Finding(
+                rule_id="BQ-007",
+                provider="gcp",
+                title="Large table rebuilt in full on every run",
+                subject=table["table_id"],
+                priority="high",
+                evidence_source="gcp.table_rebuilds",
+                observed_evidence={
+                    "table_id": table["table_id"],
+                    "table_bytes": table["table_bytes"],
+                    "rebuilds_per_day": table["rebuilds_per_day"],
+                    "avg_bytes_billed": table["avg_bytes_billed"],
+                },
+                calculation=Calculation(
+                    inputs={
+                        "rebuilds_per_day": table["rebuilds_per_day"],
+                        "avg_bytes_billed": table["avg_bytes_billed"],
+                        "days": 30,
+                        "min_table_bytes": thresholds["min_table_bytes"],
+                    },
+                    formula="rebuilt_terabytes_30d = rebuilds_per_day * avg_bytes_billed * 30 / 10^12",
+                    result={"rebuilt_terabytes_30d": rebuilt_tb_30d},
+                    units={"table_bytes": "bytes", "avg_bytes_billed": "bytes", "rebuilt_terabytes_30d": TB_UNIT},
+                    assumptions=(
+                        "Rebuilds are CREATE OR REPLACE TABLE AS SELECT jobs whose destination is this table.",
+                        "Only the partitions whose source changed need recomputing; that share is not visible in job metadata.",
+                    ),
+                ),
+                recommendation=(
+                    "Partition the table by the column that marks new data and replace only the changed partitions "
+                    "(INSERT into the partition, or MERGE), or serve it as a view when the query is cheap."
+                ),
+                action="Rebuild only changed partitions",
+                estimated_impact=EstimatedImpact(
+                    value=rebuilt_tb_30d,
+                    unit=f"{TB_UNIT} billed by rebuilds per 30 days (upper bound)",
+                    basis="Volume of all rebuilds; an incremental load keeps only the changed share. It is not a monetary saving.",
+                ),
+                weight=rebuilt_tb_30d,
+                confidence="medium",
+            )
+        )
+    return findings

@@ -90,6 +90,8 @@ def validate_specification(payload: Any) -> None:
     _require(_is_string_list(gcp.get("roles")), "gcp.roles must be a list of role names")
     dataset = gcp.get("billing_export_dataset")
     _require(dataset is None or (isinstance(dataset, str) and dataset), "gcp.billing_export_dataset must be null or an approved dataset name")
+    insights = gcp.get("storage_insights_dataset")
+    _require(insights is None or (isinstance(insights, str) and insights), "gcp.storage_insights_dataset must be null or an approved dataset name")
 
     aws = payload["aws"]
     _require(isinstance(aws, dict), "aws must be an object")
@@ -184,6 +186,27 @@ TELEMETRY_SCHEMAS: dict[str, dict[str, FieldSpec]] = {
         "avg_slots_used": (_non_negative_number, "non-negative number"),
         "peak_slots_used": (_non_negative_number, "non-negative number"),
         "hours_observed": (_non_negative_int, "non-negative integer"),
+    },
+    "gcp.dml_tables": {
+        "table_id": (_non_empty_string, "non-empty string"),
+        "table_bytes": (_non_negative_int, "non-negative integer"),
+        "dml_statements_per_day": (_non_negative_number, "non-negative number"),
+        "slot_hours_per_day": (_non_negative_number, "non-negative number"),
+    },
+    "gcp.table_rebuilds": {
+        "table_id": (_non_empty_string, "non-empty string"),
+        "table_bytes": (_non_negative_int, "non-negative integer"),
+        "rebuilds_per_day": (_non_negative_number, "non-negative number"),
+        "avg_bytes_billed": (_non_negative_int, "non-negative integer"),
+    },
+    "gcp.gcs_prefixes": {
+        "bucket": (_non_empty_string, "non-empty string"),
+        "prefix": (_non_empty_string, "non-empty string"),
+        "object_count": (_non_negative_int, "non-negative integer"),
+        "total_bytes": (_non_negative_int, "non-negative integer"),
+        "objects_added_per_day": (_non_negative_number, "non-negative number"),
+        "objects_deleted_per_day": (_non_negative_number, "non-negative number"),
+        "lifecycle_rule": (_boolean, "boolean"),
     },
     "gcp.billing_costs": {
         "service": (_non_empty_string, "non-empty string"),

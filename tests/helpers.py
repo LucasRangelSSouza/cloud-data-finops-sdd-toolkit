@@ -18,7 +18,7 @@ def load_fixture() -> dict[str, Any]:
 
 def empty_telemetry() -> dict[str, Any]:
     return {
-        "gcp": {"jobs": [], "schedules": [], "reservations": []},
+        "gcp": {"jobs": [], "schedules": [], "reservations": [], "dml_tables": [], "table_rebuilds": [], "storage_prefixes": []},
         "aws": {"costs": [], "tag_costs": [], "resources": [], "commitments": []},
         "assumptions": {},
     }

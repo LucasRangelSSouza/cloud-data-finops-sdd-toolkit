@@ -1,6 +1,6 @@
 # Rule catalog
 
-The policy engine runs nine rules. Each rule reads one telemetry dataset, compares it with documented thresholds, and emits findings in the model described below. The code lives in [`cloud_data_finops/policies/`](../cloud_data_finops/policies/), and every rule has positive, negative, and boundary tests in [`tests/test_policies.py`](../tests/test_policies.py).
+The policy engine runs twelve rules. Each rule reads one telemetry dataset, compares it with documented thresholds, and emits findings in the model described below. The code lives in [`cloud_data_finops/policies/`](../cloud_data_finops/policies/), and every rule has positive, negative, and boundary tests in [`tests/test_policies.py`](../tests/test_policies.py).
 
 Thresholds are defaults. A specification can disable rules with `rules.enabled` or override a threshold with `rules.thresholds.<rule_id>.<name>`; validation rejects unknown rule identifiers and threshold names.
 
@@ -26,6 +26,9 @@ Findings are sorted by priority, then rule identifier, then magnitude (largest f
 | BQ-003 | Missing partition pruning | `gcp.jobs` | job reads a partitioned table, `partition_pruned` is false, and `bytes_billed >= min_bytes_billed` | 10^11 bytes | Not estimated (filter selectivity unknown) |
 | BQ-004 | Inefficient scheduling pattern | `gcp.schedules` | `runs_per_day >= min_run_to_update_ratio * source_updates_per_day` and the excess is `>= min_excess_runs_per_day` | ratio 2.0; 1 run/day | `excess runs/day * avg bytes * 30 / 10^12` TB per 30 days, upper bound |
 | BQ-005 | Reservation slot utilization observation | `gcp.reservations` | `avg_slots_used / baseline_slots <= max_avg_utilization` over at least `min_hours_observed` | 0.30; 168 hours | idle slot-hours in the observed window; no price applied |
+| BQ-006 | Small table used as a high-frequency state store | `gcp.dml_tables` | `table_bytes <= max_table_bytes`, `dml_statements_per_day >= min_dml_per_day` and slot-seconds per statement `>= min_slot_seconds_per_statement` | 10^7 bytes; 1,000 statements/day; 10 slot-seconds | all slot-hours on the table per 30 days, upper bound |
+| BQ-007 | Large table rebuilt in full on every run | `gcp.table_rebuilds` | a `CREATE_TABLE_AS_SELECT` destination with `table_bytes >= min_table_bytes` rebuilt `>= min_rebuilds_per_day` | 10^11 bytes; 1 rebuild/day | `rebuilds_per_day * avg_bytes_billed * 30 / 10^12` TB, upper bound |
+| GCS-001 | Objects accumulate with no expiry | `gcp.gcs_prefixes` | no lifecycle rule, `objects_added_per_day >= min_objects_added_per_day` and deleted/added `<= max_deleted_to_added_ratio` | 100 objects/day; 0.05 | net GB added per 30 days at the observed rate |
 | AWS-001 | Service and region cost anomaly | `aws.costs` | `cost >= min_ratio_to_baseline * baseline` and `cost - baseline >= min_increase_usd`; a zero baseline is skipped | 1.5; USD 100 | Not estimated (avoidable share unknown) |
 | AWS-002 | Tag cost anomaly | `aws.tag_costs` | same test as AWS-001 per tag value; a null tag value is reported as `(untagged)` | 1.5; USD 100 | Not estimated |
 | AWS-003 | Idle or underutilized data-platform resource | `aws.resources` | `utilization <= max_utilization` over at least `min_observed_days` | 0.10; 14 days | `monthly_cost * (1 - utilization)` USD per month, upper bound under a linear-cost assumption |

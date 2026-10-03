@@ -30,7 +30,7 @@ class SyntheticGeneratorTests(unittest.TestCase):
         for seed in range(10):
             findings = evaluate(collect_fixture_telemetry(generate_assessment(seed)))
             self.assertEqual({finding["rule_id"] for finding in findings}, set(RULES), seed)
-            self.assertEqual(len(findings), 11, seed)
+            self.assertEqual(len(findings), 14, seed)
 
     def test_generator_output_is_detached_from_module_state(self) -> None:
         first = generate_assessment()

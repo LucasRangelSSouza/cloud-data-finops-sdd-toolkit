@@ -257,5 +257,74 @@ class FindingModelTests(unittest.TestCase):
         self.assertEqual(subjects, ["Amazon Athena / us-east-1", "AWS Glue / us-east-1", "r"])
 
 
+class DmlHotRowTests(unittest.TestCase):
+    def table(self, size: int, statements: float, slot_hours: float) -> dict:
+        row = {"table_id": "ops.state", "table_bytes": size, "dml_statements_per_day": statements, "slot_hours_per_day": slot_hours}
+        return with_rows("gcp", "dml_tables", [row])
+
+    def test_positive_tiny_table_with_lock_waiting(self) -> None:
+        findings = only(self.table(80, 8272, 447.66), "BQ-006")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["calculation"]["result"]["slot_seconds_per_statement"], 194.82)
+        self.assertEqual(findings[0]["estimated_impact"]["value"], 13429.8)
+
+    def test_negative_large_table_or_cheap_statements(self) -> None:
+        self.assertEqual(only(self.table(2_400_000_000, 8272, 447.66), "BQ-006"), [])
+        self.assertEqual(only(self.table(80, 1500, 0.9), "BQ-006"), [])
+
+    def test_boundary_volume_and_cost_per_statement(self) -> None:
+        self.assertEqual(len(only(self.table(10_000_000, 1000, 1000 * 10 / 3600), "BQ-006")), 1)
+        self.assertEqual(only(self.table(10_000_001, 1000, 10.0), "BQ-006"), [])
+        self.assertEqual(only(self.table(80, 999, 10.0), "BQ-006"), [])
+
+
+class FullRebuildTests(unittest.TestCase):
+    def table(self, size: int, rebuilds: float, billed: int) -> dict:
+        row = {"table_id": "trusted.reports", "table_bytes": size, "rebuilds_per_day": rebuilds, "avg_bytes_billed": billed}
+        return with_rows("gcp", "table_rebuilds", [row])
+
+    def test_positive_large_daily_rebuild(self) -> None:
+        findings = only(self.table(155 * GB, 1, 55 * GB), "BQ-007")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["calculation"]["result"]["rebuilt_terabytes_30d"], 1.65)
+
+    def test_negative_small_or_rare(self) -> None:
+        self.assertEqual(only(self.table(2 * GB, 1, GB), "BQ-007"), [])
+        self.assertEqual(only(self.table(155 * GB, 0.5, 55 * GB), "BQ-007"), [])
+
+    def test_boundary_size(self) -> None:
+        self.assertEqual(len(only(self.table(100 * GB, 1, GB), "BQ-007")), 1)
+        self.assertEqual(only(self.table(100 * GB - 1, 1, GB), "BQ-007"), [])
+
+
+class GrowthWithoutExpiryTests(unittest.TestCase):
+    def prefix(self, added: float, deleted: float, lifecycle: bool = False) -> dict:
+        row = {
+            "bucket": "exports",
+            "prefix": "csv/",
+            "object_count": 1000,
+            "total_bytes": 1000 * GB,
+            "objects_added_per_day": added,
+            "objects_deleted_per_day": deleted,
+            "lifecycle_rule": lifecycle,
+        }
+        return with_rows("gcp", "storage_prefixes", [row])
+
+    def test_positive_export_that_never_expires(self) -> None:
+        findings = only(self.prefix(200, 0), "GCS-001")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["calculation"]["result"]["growth_gb_30d"], 6000.0)
+        self.assertEqual(findings[0]["subject"], "gs://exports/csv/")
+
+    def test_negative_lifecycle_or_balanced_deletes(self) -> None:
+        self.assertEqual(only(self.prefix(200, 0, lifecycle=True), "GCS-001"), [])
+        self.assertEqual(only(self.prefix(200, 190), "GCS-001"), [])
+        self.assertEqual(only(self.prefix(50, 0), "GCS-001"), [])
+
+    def test_boundary_deleted_ratio(self) -> None:
+        self.assertEqual(len(only(self.prefix(200, 10), "GCS-001")), 1)
+        self.assertEqual(only(self.prefix(200, 11), "GCS-001"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

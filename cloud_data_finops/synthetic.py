@@ -63,6 +63,40 @@ PLANTED_RESERVATIONS = [
     {"reservation_id": "res-batch-etl", "baseline_slots": 500, "avg_slots_used": 90.0, "peak_slots_used": 420.0, "hours_observed": 720},
     {"reservation_id": "res-interactive", "baseline_slots": 200, "avg_slots_used": 150.0, "peak_slots_used": 260.0, "hours_observed": 720},
 ]
+PLANTED_DML_TABLES = [
+    # BQ-006: a one-row control table updated by every worker of a fleet; the slot time is lock waiting.
+    {"table_id": "ops.rate_control", "table_bytes": 80, "dml_statements_per_day": 8272, "slot_hours_per_day": 447.66},
+    # A busy but healthy log table: large enough and cheap per statement.
+    {"table_id": "ops.run_log", "table_bytes": 2_400_000_000, "dml_statements_per_day": 1500, "slot_hours_per_day": 0.9},
+]
+PLANTED_TABLE_REBUILDS = [
+    # BQ-007: a 55 GB table recreated in full every day although only the current year changes.
+    {"table_id": "trusted.reports", "table_bytes": 155 * GB, "rebuilds_per_day": 1, "avg_bytes_billed": 55 * GB},
+    # A small dimension rebuilt daily: below the size threshold.
+    {"table_id": "trusted.dim_region", "table_bytes": 2 * GB, "rebuilds_per_day": 1, "avg_bytes_billed": 1 * GB},
+]
+PLANTED_STORAGE_PREFIXES = [
+    # GCS-001: a daily CSV export that adds a copy per table per day and never deletes one.
+    {
+        "bucket": "exports",
+        "prefix": "csv/",
+        "object_count": 441_613,
+        "total_bytes": 56_400 * GB,
+        "objects_added_per_day": 1_850,
+        "objects_deleted_per_day": 0,
+        "lifecycle_rule": False,
+    },
+    # A raw landing prefix that already has a lifecycle rule.
+    {
+        "bucket": "demo-landing",
+        "prefix": "raw/",
+        "object_count": 120_000,
+        "total_bytes": 900 * GB,
+        "objects_added_per_day": 4_000,
+        "objects_deleted_per_day": 3_900,
+        "lifecycle_rule": True,
+    },
+]
 PLANTED_COSTS = [
     # AWS-001: Athena doubles against its baseline; Glue rises by 60%.
     {"service": "Amazon Athena", "region": "us-east-1", "cost_usd": 1400.0, "baseline_usd": 700.0},
@@ -156,9 +190,13 @@ def generate_assessment(seed: int = DEFAULT_SEED) -> dict[str, Any]:
                 "location": "us",
                 "roles": ["roles/bigquery.user", "roles/bigquery.resourceViewer"],
                 "billing_export_dataset": None,
+                "storage_insights_dataset": "demo_storage_insights",
                 "jobs": PLANTED_JOBS + _background_jobs(rng, 12),
                 "schedules": PLANTED_SCHEDULES,
                 "reservations": PLANTED_RESERVATIONS,
+                "dml_tables": PLANTED_DML_TABLES,
+                "table_rebuilds": PLANTED_TABLE_REBUILDS,
+                "storage_prefixes": PLANTED_STORAGE_PREFIXES,
             },
             "aws": {
                 "account_alias": "demo-data-account",

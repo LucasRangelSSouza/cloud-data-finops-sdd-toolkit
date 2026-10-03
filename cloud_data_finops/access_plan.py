@@ -11,6 +11,7 @@ def build_access_plan(specification: dict[str, Any]) -> dict[str, Any]:
     aws = specification["aws"]
     cur = aws.get("cur", {})
     dataset = gcp.get("billing_export_dataset")
+    insights = gcp.get("storage_insights_dataset")
     cur_enabled = bool(cur.get("enabled", False))
     return {
         "assessment_id": specification["assessment_id"],
@@ -20,8 +21,9 @@ def build_access_plan(specification: dict[str, Any]) -> dict[str, Any]:
         "gcp": {
             "project_id": gcp["project_id"],
             "project_roles": sorted(gcp["roles"]),
-            "dataset_roles": [{"dataset": dataset, "role": BILLING_DATASET_ROLE}] if dataset else [],
+            "dataset_roles": [{"dataset": name, "role": BILLING_DATASET_ROLE} for name in (dataset, insights) if name],
             "billing_export_dataset": dataset,
+            "storage_insights_dataset": insights,
             "business_table_content_access": False,
             "prohibited_roles": sorted(FORBIDDEN_GCP_ROLES),
         },

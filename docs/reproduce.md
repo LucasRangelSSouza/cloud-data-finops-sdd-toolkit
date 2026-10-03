@@ -26,7 +26,7 @@ python scripts/reproduce.py
 `scripts/reproduce.py` does three things:
 
 1. checks that `tests/fixtures/assessment.json` is byte-identical to the output of `cloud_data_finops.synthetic` with the default seed (`20260901`);
-2. runs validation, preflight, the access plan, collection through the fixture adapters, the nine rules, the Markdown report, the PNG evidence cards, and the PPTX deck into `artifacts/reproduce/`;
+2. runs validation, preflight, the access plan, collection through the fixture adapters, the twelve rules, the Markdown report, the PNG evidence cards, and the PPTX deck into `artifacts/reproduce/`;
 3. compares each artifact's SHA-256 with the versioned manifest and exits with status 1 if a strict artifact differs.
 
 Expected output:
@@ -45,10 +45,10 @@ ok   cost-signals.png  ddda9dcf0f73d1ca23ea647f7e46dac9aec894cb61573b51de2a813b8
 
 | Artifact | Content | SHA-256 | Comparison |
 | --- | --- | --- | --- |
-| `access-plan.json` | Provider-specific read-only access request | `28976f9bee05a9091008a9d8e6506b7369f936f2858f34b787d72d4652d3930c` | strict |
-| `findings.json` | 11 structured findings from 9 rules | `e4ca61ca9a634f52c2fcde3dc20538e0879a59d15bede9601869f7cdbc8c014f` | strict |
-| `report.md` | Technical report with evidence, calculations, limitations, and sources | `f87c4869e40e921ab805c7429abe158e6b3158490457299187fbf1482e7f1f06` | strict |
-| `synthetic-finops-assessment.pptx` | Seven-slide executive deck | `f52c8c7b3a1e72c17bc4671a47a81cbf8daa70ac31c88f6e5b4243a68886a0e7` | strict |
+| `access-plan.json` | Provider-specific read-only access request | `2e0760217ef1090dfff9ed02402ea673cc73dab9da8c953589d17db9d16253b4` | strict |
+| `findings.json` | 14 structured findings from 12 rules | `31b9eb6e4e3f2678456bc916d09a8bd06695ebcbdaf82ff85db3357a468dc29a` | strict |
+| `report.md` | Technical report with evidence, calculations, limitations, and sources | `7d551d13b8a80f635e68f96a8cfe34dbc1d4eb98ce906be19c1a71263ce9914e` | strict |
+| `synthetic-finops-assessment.pptx` | Nine-slide executive deck | `96879f4e5faef31fd8a227607338867b6b4e7ee975e36135b8d9e9bce83fb823` | strict |
 | `cost-signals.png` | Three evidence cards, one unit each | `ddda9dcf0f73d1ca23ea647f7e46dac9aec894cb61573b51de2a813b84167082` | informational |
 
 The PNG checksum is informational because font rasterization can differ between operating systems even with the same matplotlib version. The deck contains no images and is written with fixed ZIP timestamps, fixed core properties, and uncompressed entries, so its bytes depend only on the findings, the fixture, and the python-pptx version.

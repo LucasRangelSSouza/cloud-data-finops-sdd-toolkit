@@ -41,6 +41,40 @@ FROM `{region}.INFORMATION_SCHEMA.RESERVATIONS_TIMELINE`
 WHERE period_start >= TIMESTAMP('{start}') AND period_start < TIMESTAMP_ADD(TIMESTAMP('{end}'), INTERVAL 1 DAY)
 """
 
+DML_TABLES_QUERY = """
+WITH dml AS (
+  SELECT CONCAT(destination_table.project_id, '.', destination_table.dataset_id, '.', destination_table.table_id) AS table_id,
+         COUNT(*) AS statements, SUM(total_slot_ms) / 3600000 AS slot_hours
+  FROM `{region}.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+  WHERE statement_type IN ('UPDATE', 'DELETE', 'MERGE', 'INSERT')
+    AND creation_time >= TIMESTAMP('{start}') AND creation_time < TIMESTAMP_ADD(TIMESTAMP('{end}'), INTERVAL 1 DAY)
+  GROUP BY table_id
+)
+SELECT dml.table_id, s.total_logical_bytes AS table_bytes, dml.statements, dml.slot_hours
+FROM dml JOIN `{region}.INFORMATION_SCHEMA.TABLE_STORAGE` AS s
+  ON dml.table_id = CONCAT(s.project_id, '.', s.table_schema, '.', s.table_name)
+"""
+
+TABLE_REBUILDS_QUERY = """
+WITH rebuilds AS (
+  SELECT CONCAT(destination_table.project_id, '.', destination_table.dataset_id, '.', destination_table.table_id) AS table_id,
+         COUNT(*) AS runs, AVG(total_bytes_billed) AS avg_bytes_billed
+  FROM `{region}.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+  WHERE statement_type = 'CREATE_TABLE_AS_SELECT'
+    AND creation_time >= TIMESTAMP('{start}') AND creation_time < TIMESTAMP_ADD(TIMESTAMP('{end}'), INTERVAL 1 DAY)
+  GROUP BY table_id
+)
+SELECT r.table_id, s.total_logical_bytes AS table_bytes, r.runs, r.avg_bytes_billed
+FROM rebuilds AS r
+JOIN `{region}.INFORMATION_SCHEMA.TABLE_STORAGE` AS s ON r.table_id = CONCAT(s.project_id, '.', s.table_schema, '.', s.table_name)
+"""
+
+STORAGE_PREFIXES_QUERY = """
+SELECT bucket, prefix, object_count, total_bytes, objects_added_per_day, objects_deleted_per_day, lifecycle_rule
+FROM `{project}.{dataset}.prefix_daily_summary`
+WHERE snapshot_date BETWEEN DATE('{start}') AND DATE('{end}')
+"""
+
 BILLING_QUERY = """
 SELECT service.description AS service, SUM(cost) AS cost, currency
 FROM `{project}.{dataset}.gcp_billing_export_v1`
@@ -52,7 +86,11 @@ def _approved_scope(scope: dict[str, Any]) -> GcpApprovedScope:
     project_id = scope.get("project_id")
     if not isinstance(project_id, str) or not project_id:
         raise ValueError("GCP project_id is required for metadata collection")
-    return GcpApprovedScope(project_id=project_id, billing_export_dataset=scope.get("billing_export_dataset"))
+    return GcpApprovedScope(
+        project_id=project_id,
+        billing_export_dataset=scope.get("billing_export_dataset"),
+        storage_insights_dataset=scope.get("storage_insights_dataset"),
+    )
 
 
 def _run(client: GcpMetadataClient, sql: str, purpose: str, dataset: str, approved: GcpApprovedScope) -> list[dict[str, Any]]:
@@ -81,6 +119,25 @@ def collect_schedule_metadata(scope: dict[str, Any], period: dict[str, str], cli
 def collect_reservation_metadata(scope: dict[str, Any], period: dict[str, str], client: GcpMetadataClient) -> list[dict[str, Any]]:
     approved = _approved_scope(scope)
     return _run(client, RESERVATIONS_QUERY.format(**_template_values(scope, period)), "reservations", "gcp.reservations", approved)
+
+
+def collect_dml_tables(scope: dict[str, Any], period: dict[str, str], client: GcpMetadataClient) -> list[dict[str, Any]]:
+    approved = _approved_scope(scope)
+    return _run(client, DML_TABLES_QUERY.format(**_template_values(scope, period)), "dml_tables", "gcp.dml_tables", approved)
+
+
+def collect_table_rebuilds(scope: dict[str, Any], period: dict[str, str], client: GcpMetadataClient) -> list[dict[str, Any]]:
+    approved = _approved_scope(scope)
+    return _run(client, TABLE_REBUILDS_QUERY.format(**_template_values(scope, period)), "table_rebuilds", "gcp.table_rebuilds", approved)
+
+
+def collect_storage_prefixes(scope: dict[str, Any], period: dict[str, str], client: GcpMetadataClient) -> list[dict[str, Any]]:
+    """Read Storage Insights only when the specification approves one inventory dataset for it; otherwise collect nothing."""
+    approved = _approved_scope(scope)
+    if approved.storage_insights_dataset is None:
+        return []
+    sql = STORAGE_PREFIXES_QUERY.format(project=approved.project_id, dataset=approved.storage_insights_dataset, start=period["start"], end=period["end"])
+    return _run(client, sql, "storage_prefixes", "gcp.gcs_prefixes", approved)
 
 
 def collect_billing_costs(scope: dict[str, Any], period: dict[str, str], client: GcpMetadataClient) -> list[dict[str, Any]]:

@@ -6,9 +6,9 @@
 
 - Assessment: `demo-2026-09`
 - Period: 2026-08-02 to 2026-08-31
-- Rules evaluated: 9
-- Findings: 11 (high 5, medium 4, low 2)
-- By provider: GCP 6, AWS 5
+- Rules evaluated: 12
+- Findings: 14 (high 7, medium 5, low 2)
+- By provider: GCP 9, AWS 5
 
 ## Scope and access boundary
 
@@ -25,10 +25,13 @@
 | high | BQ-001 | `job-expensive` | Job billed an excessive number of bytes | high |
 | high | BQ-003 | `job-expensive` | Partitioned table read without partition pruning | high |
 | high | BQ-003 | `job-events-scan` | Partitioned table read without partition pruning | high |
+| high | BQ-006 | `ops.rate_control` | Small table used as a high-frequency state store | high |
+| high | BQ-007 | `trusted.reports` | Large table rebuilt in full on every run | medium |
 | medium | AWS-002 | `team=(untagged)` | Tagged cost allocation exceeds its baseline | medium |
 | medium | BQ-002 | `fp-adhoc-cohort` | Expensive query pattern runs repeatedly | medium |
 | medium | BQ-004 | `fp-hourly-kpi-refresh` | Scheduled query runs more often than its source changes | medium |
 | medium | BQ-005 | `res-batch-etl` | Reservation baseline slots are mostly idle | medium |
+| medium | GCS-001 | `gs://exports/csv/` | Objects accumulate with no expiry | medium |
 | low | AWS-003 | `redshift-reporting` | Data-platform resource is underutilized | low |
 | low | CMT-001 | `AWS Glue` | Steady on-demand usage with low commitment coverage | medium |
 
@@ -214,6 +217,82 @@ Not estimated: the share of partitions a filter would skip is unknown.
 
 high
 
+### BQ-006 · ops.rate_control: Small table used as a high-frequency state store
+
+Priority: high. Provider: `gcp`. Evidence source: `gcp.dml_tables`.
+
+#### Observed evidence
+
+- `table_id`: `"ops.rate_control"`
+- `table_bytes`: `80`
+- `dml_statements_per_day`: `8272`
+- `slot_hours_per_day`: `447.66`
+
+#### Calculation
+
+- Formula: `slot_seconds_per_statement = slot_hours_per_day * 3600 / dml_statements_per_day`
+- Input `table_bytes`: `80`
+- Input `dml_statements_per_day`: `8272`
+- Input `slot_hours_per_day`: `447.66`
+- Input `max_table_bytes`: `10000000`
+- Input `min_dml_per_day`: `1000`
+- Result `slot_seconds_per_statement`: `194.82`
+- Result `slot_hours_30d`: `13429.8`
+- Unit of `table_bytes`: bytes
+- Unit of `slot_seconds_per_statement`: slot-seconds
+- Unit of `slot_hours_30d`: slot-hours
+- Assumption: Slot time on a table this small comes from waiting on DML locks, not from scanning data.
+- Assumption: BigQuery queues concurrent mutating statements on the same table, so concurrent writers wait.
+
+#### Recommendation
+
+Move the state out of BigQuery (an object with a generation precondition, a key-value store or a transactional database), or have one writer per cycle instead of one per worker.
+
+#### Estimated impact
+
+13,429.8 slot-hours per 30 days (upper bound). Basis: All slot time on this table; moving the state elsewhere removes it. No price is applied.
+
+#### Confidence
+
+high
+
+### BQ-007 · trusted.reports: Large table rebuilt in full on every run
+
+Priority: high. Provider: `gcp`. Evidence source: `gcp.table_rebuilds`.
+
+#### Observed evidence
+
+- `table_id`: `"trusted.reports"`
+- `table_bytes`: `155000000000`
+- `rebuilds_per_day`: `1`
+- `avg_bytes_billed`: `55000000000`
+
+#### Calculation
+
+- Formula: `rebuilt_terabytes_30d = rebuilds_per_day * avg_bytes_billed * 30 / 10^12`
+- Input `rebuilds_per_day`: `1`
+- Input `avg_bytes_billed`: `55000000000`
+- Input `days`: `30`
+- Input `min_table_bytes`: `100000000000`
+- Result `rebuilt_terabytes_30d`: `1.65`
+- Unit of `table_bytes`: bytes
+- Unit of `avg_bytes_billed`: bytes
+- Unit of `rebuilt_terabytes_30d`: TB (10^12 bytes)
+- Assumption: Rebuilds are CREATE OR REPLACE TABLE AS SELECT jobs whose destination is this table.
+- Assumption: Only the partitions whose source changed need recomputing; that share is not visible in job metadata.
+
+#### Recommendation
+
+Partition the table by the column that marks new data and replace only the changed partitions (INSERT into the partition, or MERGE), or serve it as a view when the query is cheap.
+
+#### Estimated impact
+
+1.65 TB (10^12 bytes) billed by rebuilds per 30 days (upper bound). Basis: Volume of all rebuilds; an incremental load keeps only the changed share. It is not a monetary saving.
+
+#### Confidence
+
+medium
+
 ### AWS-002 · team=(untagged): Tagged cost allocation exceeds its baseline
 
 Priority: medium. Provider: `aws`. Evidence source: `aws.tag_costs`.
@@ -360,6 +439,43 @@ Review baseline and autoscaling settings with the workload owner against peak us
 #### Estimated impact
 
 295,200.0 slot-hours of idle baseline capacity in the observed window. Basis: Observed capacity minus observed average use; no price is applied.
+
+#### Confidence
+
+medium
+
+### GCS-001 · gs://exports/csv/: Objects accumulate with no expiry
+
+Priority: medium. Provider: `gcp`. Evidence source: `gcp.gcs_prefixes`.
+
+#### Observed evidence
+
+- `object_count`: `441613`
+- `total_bytes`: `56400000000000`
+- `added_per_day`: `1850`
+- `deleted_per_day`: `0`
+
+#### Calculation
+
+- Formula: `growth_gb_30d = (objects_added_per_day - objects_deleted_per_day) * avg_object_bytes * 30 / 10^9`
+- Input `objects_added_per_day`: `1850`
+- Input `objects_deleted_per_day`: `0`
+- Input `avg_object_bytes`: `127713632`
+- Input `days`: `30`
+- Result `deleted_to_added_ratio`: `0.0`
+- Result `growth_gb_30d`: `7088.1`
+- Unit of `total_bytes`: bytes
+- Unit of `growth_gb_30d`: GB (10^9 bytes)
+- Assumption: Counts come from the Storage Insights inventory over the assessment window.
+- Assumption: Storage is billed on average bytes held during the month, so a cleanup shows fully only in the next billing cycle.
+
+#### Recommendation
+
+Confirm with the owner how many versions are needed, then add a lifecycle rule (age or number of newer versions) and delete the backlog once.
+
+#### Estimated impact
+
+7,088.1 GB of new stored data per 30 days at the observed rate. Basis: Net growth of this prefix; no storage price is applied.
 
 #### Confidence
 

@@ -181,15 +181,21 @@ def evaluate_grants(specification: dict[str, Any], grants: dict[str, Any]) -> di
         missing.append(f"GCP role {role} is missing. Remediation: grant {role} on project {gcp['project_id']}")
 
     approved_dataset = gcp.get("billing_export_dataset")
+    insights_dataset = gcp.get("storage_insights_dataset")
+    approved_datasets = {name for name in (approved_dataset, insights_dataset) if name}
     dataset_grants = gcp_grants.get("dataset_roles", [])
     for grant in dataset_grants:
-        if grant.get("dataset") != approved_dataset:
+        if grant.get("dataset") not in approved_datasets:
             violations.append("granted GCP dataset access covers an unapproved dataset")
         elif grant.get("role") != BILLING_DATASET_ROLE:
-            violations.append(f"granted GCP dataset role on the billing export must be {BILLING_DATASET_ROLE}")
+            violations.append(f"granted GCP dataset role on an approved dataset must be {BILLING_DATASET_ROLE}")
     if approved_dataset and not any(grant.get("dataset") == approved_dataset for grant in dataset_grants):
         missing.append(
             f"GCP {BILLING_DATASET_ROLE} on the approved billing export dataset is missing. Remediation: grant it on dataset {approved_dataset} only"
+        )
+    if insights_dataset and not any(grant.get("dataset") == insights_dataset for grant in dataset_grants):
+        missing.append(
+            f"GCP {BILLING_DATASET_ROLE} on the approved Storage Insights dataset is missing. Remediation: grant it on dataset {insights_dataset} only"
         )
 
     aws_grants = grants.get("aws", {})

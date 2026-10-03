@@ -40,8 +40,8 @@ class PresentationTests(unittest.TestCase):
         cls.deck = Presentation(BytesIO(cls.raw))
 
     def test_deck_opens_with_the_expected_slide_count(self) -> None:
-        self.assertEqual(len(self.deck.slides), 7)
-        self.assertEqual(len(Presentation(str(EVIDENCE_DECK)).slides), 7)
+        self.assertEqual(len(self.deck.slides), 9)
+        self.assertEqual(len(Presentation(str(EVIDENCE_DECK)).slides), 9)
 
     def test_required_sections_appear_in_order(self) -> None:
         sections = [slide.name for slide in self.deck.slides]
@@ -56,7 +56,16 @@ class PresentationTests(unittest.TestCase):
             self.assertTrue(title.text.strip())
             titles.append(title.text)
         self.assertEqual(len(titles), len(set(titles)))
-        self.assertEqual(titles[1:5], ["Executive summary", "Cost drivers by provider", "Prioritized recommendations", "Risks and assumptions"])
+        self.assertEqual(
+            titles[1:6],
+            [
+                "Executive summary",
+                "Cost drivers by provider",
+                "Prioritized recommendations (1 of 2)",
+                "Prioritized recommendations (2 of 2)",
+                "Risks and assumptions",
+            ],
+        )
 
     def test_every_finding_is_listed_in_recommendations_and_appendix(self) -> None:
         def table_text(section: str) -> str:
@@ -133,8 +142,8 @@ class PresentationTests(unittest.TestCase):
         findings = self.findings * 2
         deck = Presentation(BytesIO(render_deck(telemetry, findings)))
         titles = [slide.shapes.title.text for slide in deck.slides]
-        self.assertIn("Prioritized recommendations (2 of 2)", titles)
-        self.assertIn("Evidence appendix (3 of 3)", titles)
+        self.assertIn("Prioritized recommendations (3 of 3)", titles)
+        self.assertIn("Evidence appendix (4 of 4)", titles)
 
 
 if __name__ == "__main__":

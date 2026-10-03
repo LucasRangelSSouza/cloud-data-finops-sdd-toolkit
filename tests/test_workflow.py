@@ -23,7 +23,9 @@ class FixtureWorkflowTests(unittest.TestCase):
 
         self.assertEqual(collected["gcp"]["jobs"], specification["gcp"]["jobs"])
         self.assertEqual(collected["aws"]["costs"], specification["aws"]["costs"])
-        self.assertEqual([purpose for purpose, _ in gcp_client.queries], ["jobs", "schedules", "reservations"])
+        self.assertEqual(
+            [purpose for purpose, _ in gcp_client.queries], ["jobs", "schedules", "reservations", "dml_tables", "table_rebuilds", "storage_prefixes"]
+        )
         self.assertEqual(aws_client.operations, ["GetCostAndUsage", "GetCostAndUsage", "GetMetricData", "GetSavingsPlansCoverage"])
         self.assertIsNot(collected, specification)
 
@@ -48,7 +50,7 @@ class FixtureWorkflowTests(unittest.TestCase):
             self.assertTrue((output / "access-plan.json").is_file())
 
         self.assertEqual(written, findings)
-        self.assertEqual(len(findings), 11)
+        self.assertEqual(len(findings), 14)
         for finding in findings:
             self.assertIn(f"### {finding['rule_id']} · {finding['subject']}", report)
         self.assertGreaterEqual(len(deck.slides), 6)

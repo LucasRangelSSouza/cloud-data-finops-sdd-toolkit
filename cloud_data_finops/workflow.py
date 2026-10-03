@@ -8,7 +8,14 @@ from typing import Any
 from .adapters import aws as aws_adapter
 from .adapters import gcp as gcp_adapter
 
-GCP_DATASETS = {"jobs": "jobs", "schedules": "schedules", "reservations": "reservations"}
+GCP_DATASETS = {
+    "jobs": "jobs",
+    "schedules": "schedules",
+    "reservations": "reservations",
+    "dml_tables": "dml_tables",
+    "table_rebuilds": "table_rebuilds",
+    "storage_prefixes": "storage_prefixes",
+}
 
 
 class GcpFixtureClient:
@@ -53,6 +60,9 @@ def collect_telemetry(specification: dict[str, Any], gcp_client: Any, aws_client
     gcp_scope["jobs"] = gcp_adapter.collect_job_metadata(gcp_scope, period, gcp_client)
     gcp_scope["schedules"] = gcp_adapter.collect_schedule_metadata(gcp_scope, period, gcp_client)
     gcp_scope["reservations"] = gcp_adapter.collect_reservation_metadata(gcp_scope, period, gcp_client)
+    gcp_scope["dml_tables"] = gcp_adapter.collect_dml_tables(gcp_scope, period, gcp_client)
+    gcp_scope["table_rebuilds"] = gcp_adapter.collect_table_rebuilds(gcp_scope, period, gcp_client)
+    gcp_scope["storage_prefixes"] = gcp_adapter.collect_storage_prefixes(gcp_scope, period, gcp_client)
     aws_scope["costs"] = aws_adapter.collect_cost_metadata(aws_scope, period, aws_client)
     aws_scope["tag_costs"] = aws_adapter.collect_tag_costs(aws_scope, period, aws_client)
     aws_scope["resources"] = aws_adapter.collect_resource_utilization(aws_scope, period, aws_client)

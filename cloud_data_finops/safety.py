@@ -55,7 +55,7 @@ WRITE_KEYWORDS = (
 _WRITE_PATTERN = re.compile(r"\b(" + "|".join(WRITE_KEYWORDS) + r")\b", re.IGNORECASE)
 _TABLE_REFERENCE = re.compile(r"\b(?:FROM|JOIN)\s+(`[^`]+`|\"[^\"]+\"|[A-Za-z0-9_.\-]+)", re.IGNORECASE)
 _METADATA_VIEW = re.compile(
-    r"^(?:[a-z][a-z0-9\-]*\.)?region-[a-z0-9\-]+\.INFORMATION_SCHEMA\.(JOBS|JOBS_BY_PROJECT|RESERVATIONS|RESERVATIONS_TIMELINE)$",
+    r"^(?:[a-z][a-z0-9\-]*\.)?region-[a-z0-9\-]+\.INFORMATION_SCHEMA\.(JOBS|JOBS_BY_PROJECT|RESERVATIONS|RESERVATIONS_TIMELINE|TABLE_STORAGE)$",
     re.IGNORECASE,
 )
 _S3_URI = re.compile(r"^s3://([a-z0-9][a-z0-9.\-]{1,61}[a-z0-9])/(.+)$")
@@ -65,6 +65,7 @@ _S3_URI = re.compile(r"^s3://([a-z0-9][a-z0-9.\-]{1,61}[a-z0-9])/(.+)$")
 class GcpApprovedScope:
     project_id: str
     billing_export_dataset: str | None = None
+    storage_insights_dataset: str | None = None
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,8 @@ def _require_single_read_statement(sql: str) -> str:
         raise SafetyViolation("multi-statement queries are not allowed")
     if not re.match(r"^(SELECT|WITH)\b", cleaned, re.IGNORECASE):
         raise SafetyViolation("only read-only SELECT queries are allowed")
-    if _WRITE_PATTERN.search(cleaned):
+    # Keywords inside string literals are data (for example statement_type = 'UPDATE'), not statements.
+    if _WRITE_PATTERN.search(re.sub(r"'(?:[^'\\]|\\.)*'", "''", cleaned)):
         raise SafetyViolation("write or administrative SQL keywords are not allowed")
     return cleaned
 
@@ -115,6 +117,8 @@ def guard_bigquery_query(sql: str, scope: GcpApprovedScope) -> None:
         if reference.upper() in cte_names or _METADATA_VIEW.match(reference):
             continue
         parts = reference.split(".")
+        if len(parts) == 3 and parts[0] == scope.project_id and scope.storage_insights_dataset is not None and parts[1] == scope.storage_insights_dataset:
+            continue
         if len(parts) == 3 and parts[0] == scope.project_id and parts[2].startswith("gcp_billing_export"):
             if scope.billing_export_dataset is None:
                 raise SafetyViolation("billing export access is not approved for this assessment")

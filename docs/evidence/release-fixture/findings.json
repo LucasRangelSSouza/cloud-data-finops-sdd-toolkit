@@ -213,6 +213,96 @@
     "title": "Partitioned table read without partition pruning"
   },
   {
+    "action": "Move high-frequency state out of BigQuery",
+    "calculation": {
+      "assumptions": [
+        "Slot time on a table this small comes from waiting on DML locks, not from scanning data.",
+        "BigQuery queues concurrent mutating statements on the same table, so concurrent writers wait."
+      ],
+      "formula": "slot_seconds_per_statement = slot_hours_per_day * 3600 / dml_statements_per_day",
+      "inputs": {
+        "dml_statements_per_day": 8272,
+        "max_table_bytes": 10000000,
+        "min_dml_per_day": 1000,
+        "slot_hours_per_day": 447.66,
+        "table_bytes": 80
+      },
+      "result": {
+        "slot_hours_30d": 13429.8,
+        "slot_seconds_per_statement": 194.82
+      },
+      "units": {
+        "slot_hours_30d": "slot-hours",
+        "slot_seconds_per_statement": "slot-seconds",
+        "table_bytes": "bytes"
+      }
+    },
+    "confidence": "high",
+    "estimated_impact": {
+      "basis": "All slot time on this table; moving the state elsewhere removes it. No price is applied.",
+      "unit": "slot-hours per 30 days (upper bound)",
+      "value": 13429.8
+    },
+    "evidence_source": "gcp.dml_tables",
+    "observed_evidence": {
+      "dml_statements_per_day": 8272,
+      "slot_hours_per_day": 447.66,
+      "table_bytes": 80,
+      "table_id": "ops.rate_control"
+    },
+    "priority": "high",
+    "provider": "gcp",
+    "recommendation": "Move the state out of BigQuery (an object with a generation precondition, a key-value store or a transactional database), or have one writer per cycle instead of one per worker.",
+    "related_rules": [],
+    "rule_id": "BQ-006",
+    "subject": "ops.rate_control",
+    "title": "Small table used as a high-frequency state store"
+  },
+  {
+    "action": "Rebuild only changed partitions",
+    "calculation": {
+      "assumptions": [
+        "Rebuilds are CREATE OR REPLACE TABLE AS SELECT jobs whose destination is this table.",
+        "Only the partitions whose source changed need recomputing; that share is not visible in job metadata."
+      ],
+      "formula": "rebuilt_terabytes_30d = rebuilds_per_day * avg_bytes_billed * 30 / 10^12",
+      "inputs": {
+        "avg_bytes_billed": 55000000000,
+        "days": 30,
+        "min_table_bytes": 100000000000,
+        "rebuilds_per_day": 1
+      },
+      "result": {
+        "rebuilt_terabytes_30d": 1.65
+      },
+      "units": {
+        "avg_bytes_billed": "bytes",
+        "rebuilt_terabytes_30d": "TB (10^12 bytes)",
+        "table_bytes": "bytes"
+      }
+    },
+    "confidence": "medium",
+    "estimated_impact": {
+      "basis": "Volume of all rebuilds; an incremental load keeps only the changed share. It is not a monetary saving.",
+      "unit": "TB (10^12 bytes) billed by rebuilds per 30 days (upper bound)",
+      "value": 1.65
+    },
+    "evidence_source": "gcp.table_rebuilds",
+    "observed_evidence": {
+      "avg_bytes_billed": 55000000000,
+      "rebuilds_per_day": 1,
+      "table_bytes": 155000000000,
+      "table_id": "trusted.reports"
+    },
+    "priority": "high",
+    "provider": "gcp",
+    "recommendation": "Partition the table by the column that marks new data and replace only the changed partitions (INSERT into the partition, or MERGE), or serve it as a view when the query is cheap.",
+    "related_rules": [],
+    "rule_id": "BQ-007",
+    "subject": "trusted.reports",
+    "title": "Large table rebuilt in full on every run"
+  },
+  {
     "action": "Attribute untagged spend to an owner",
     "calculation": {
       "assumptions": [
@@ -390,6 +480,50 @@
     "rule_id": "BQ-005",
     "subject": "res-batch-etl",
     "title": "Reservation baseline slots are mostly idle"
+  },
+  {
+    "action": "Add a lifecycle rule and clear the backlog",
+    "calculation": {
+      "assumptions": [
+        "Counts come from the Storage Insights inventory over the assessment window.",
+        "Storage is billed on average bytes held during the month, so a cleanup shows fully only in the next billing cycle."
+      ],
+      "formula": "growth_gb_30d = (objects_added_per_day - objects_deleted_per_day) * avg_object_bytes * 30 / 10^9",
+      "inputs": {
+        "avg_object_bytes": 127713632,
+        "days": 30,
+        "objects_added_per_day": 1850,
+        "objects_deleted_per_day": 0
+      },
+      "result": {
+        "deleted_to_added_ratio": 0.0,
+        "growth_gb_30d": 7088.1
+      },
+      "units": {
+        "growth_gb_30d": "GB (10^9 bytes)",
+        "total_bytes": "bytes"
+      }
+    },
+    "confidence": "medium",
+    "estimated_impact": {
+      "basis": "Net growth of this prefix; no storage price is applied.",
+      "unit": "GB of new stored data per 30 days at the observed rate",
+      "value": 7088.1
+    },
+    "evidence_source": "gcp.gcs_prefixes",
+    "observed_evidence": {
+      "added_per_day": 1850,
+      "deleted_per_day": 0,
+      "object_count": 441613,
+      "total_bytes": 56400000000000
+    },
+    "priority": "medium",
+    "provider": "gcp",
+    "recommendation": "Confirm with the owner how many versions are needed, then add a lifecycle rule (age or number of newer versions) and delete the backlog once.",
+    "related_rules": [],
+    "rule_id": "GCS-001",
+    "subject": "gs://exports/csv/",
+    "title": "Objects accumulate with no expiry"
   },
   {
     "action": "Confirm owner and dependencies before resizing",

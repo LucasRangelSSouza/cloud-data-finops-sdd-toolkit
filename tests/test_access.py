@@ -97,7 +97,13 @@ class RequestedAccessTests(unittest.TestCase):
 
     def test_access_plan_lists_dataset_scoped_billing_reader_and_cur_scope(self) -> None:
         plan = build_access_plan(cur_specification())
-        self.assertEqual(plan["gcp"]["dataset_roles"], [{"dataset": "billing_export", "role": "roles/bigquery.dataViewer"}])
+        self.assertEqual(
+            plan["gcp"]["dataset_roles"],
+            [
+                {"dataset": "billing_export", "role": "roles/bigquery.dataViewer"},
+                {"dataset": "demo_storage_insights", "role": "roles/bigquery.dataViewer"},
+            ],
+        )
         self.assertNotIn("roles/bigquery.dataViewer", plan["gcp"]["project_roles"])
         self.assertEqual(plan["aws"]["cur"]["athena_workgroup"], "finops-readonly")
         self.assertFalse(plan["aws"]["business_data_write_access"])
